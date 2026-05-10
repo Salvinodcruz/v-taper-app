@@ -220,6 +220,16 @@
         .photo-input label { display: block; margin-bottom: 5px; font-size: 12px; color: var(--text-secondary); }
         textarea { width: 100%; background: var(--surface-elevated); border: 1px solid var(--border); color: white; border-radius: 12px; padding: 12px; font-family: inherit; }
 
+        /* Missed Tracker */
+        .missed-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 15px; }
+        .day-dot { aspect-ratio: 1; border-radius: 50%; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text-secondary); }
+        .day-dot.done { background: var(--success); color: black; border-color: var(--success); }
+        .day-dot.missed { background: var(--error); color: white; border-color: var(--error); }
+        .day-dot.rest { background: var(--surface-elevated); }
+
+        /* Dropdown Style */
+        select.input-box { -webkit-appearance: none; text-align: left; padding-left: 12px; }
+
     </style>
 </head>
 <body>
@@ -237,9 +247,13 @@
                 <div class="badge" id="day-tag">...</div>
             </header>
 
-            <div id="no-workout" class="card" style="display:none">
+            <div id="no-workout" class="card" style="display:none; text-align:center;">
                 <p>Rest Day. Focus on recovery and protein intake.</p>
-                <button class="btn btn-outline" style="margin-top:15px" onclick="loadWorkout('thu')">Start Thu Session Anyway</button>
+                <div style="margin-top:20px;">
+                    <label class="sub">Log Bodyweight (kg)</label>
+                    <input type="number" id="rest-bodyweight" class="input-box" placeholder="0.0" style="margin-top:10px; font-size:24px; height:60px;">
+                    <button class="btn" style="margin-top:15px" onclick="saveRestBodyweight()">Save Weight</button>
+                </div>
             </div>
 
             <div id="workout-container"></div>
@@ -251,11 +265,24 @@
             <p class="sub">V-Taper Analytics</p>
 
             <div class="card" style="margin-top:20px">
+                <h2>Weekly Consistency</h2>
+                <div class="missed-grid" id="consistency-grid"></div>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <span class="sub" style="display:flex; align-items:center; gap:4px;"><i class="ti ti-circle-filled" style="color:var(--success)"></i> Done</span>
+                    <span class="sub" style="display:flex; align-items:center; gap:4px;"><i class="ti ti-circle-filled" style="color:var(--error)"></i> Missed</span>
+                    <span class="sub" style="display:flex; align-items:center; gap:4px;"><i class="ti ti-circle-filled" style="color:var(--surface-elevated)"></i> Rest</span>
+                </div>
+            </div>
+
+            <div class="card">
                 <h2>Volume Velocity</h2>
                 <div class="chart-container">
                     <svg id="volume-chart" viewBox="0 0 400 150" style="width:100%; height:100%"></svg>
                 </div>
                 <p class="sub" id="total-vol-label">Total Volume: 0kg</p>
+                <button class="btn btn-outline" style="margin-top:15px;" onclick="exportCSV()">
+                    <i class="ti ti-download"></i> Export Data (CSV)
+                </button>
             </div>
 
             <div class="card">
@@ -288,6 +315,15 @@
             <p class="sub">Coach Preferences</p>
 
             <div class="card" style="margin-top:20px">
+                <h3>Active Routine</h3>
+                <p class="sub" style="margin-bottom:12px;">Switch your training split</p>
+                <select id="routine-select" class="input-box" onchange="switchRoutine()">
+                    <option value="4-Day Uni Split">4-Day Uni Split (Thu-Sun)</option>
+                    <option value="7-Day Pre-Uni Split">7-Day Pre-Uni Split (Mon-Sun)</option>
+                </select>
+            </div>
+
+            <div class="card">
                 <div class="toggle-container">
                     <div>
                         <h3>Muscle Memory Mode</h3>
@@ -305,7 +341,7 @@
                 <button class="btn btn-outline" style="margin-top:15px; border-color: var(--error); color: var(--error);" onclick="clearData()">Wipe All Data</button>
             </div>
             
-            <p style="text-align:center; font-size:10px; color:var(--text-secondary); margin-top:20px;">ELITE TRAINER V1.0 | OFFLINE ENABLED</p>
+            <p style="text-align:center; font-size:10px; color:var(--text-secondary); margin-top:20px;">ELITE TRAINER V1.1 | OFFLINE ENABLED</p>
         </div>
     </div>
 
@@ -326,52 +362,125 @@
 
     <script>
         // ROUTINE DEFINITION
-        const ROUTINE = {
-            thu: {
-                name: "Lateral Delt Overload",
-                exercises: [
-                    { id: "thu_1", name: "DB Lateral Raises (Heavy)", target: "Side Delts", sets: 4, reps: "12-15", rest: 60 },
-                    { id: "thu_2", name: "Overhead Cable Extensions", target: "Tricep Long Head", sets: 4, reps: "12-15", rest: 90 },
-                    { id: "thu_3", name: "Face Pulls", target: "Rear Delts", sets: 3, reps: "15-20", rest: 60 },
-                    { id: "thu_4", name: "Skull Crushers", target: "Triceps", sets: 3, reps: "10-12", rest: 90 }
-                ]
+        const SPLITS = {
+            "4-Day Uni Split": {
+                thu: {
+                    name: "Lateral Delt Overload",
+                    exercises: [
+                        { id: "thu_1", name: "DB Lateral Raises (Heavy)", target: "Side Delts", sets: 4, reps: "12-15", rest: 60 },
+                        { id: "thu_2", name: "Overhead Cable Extensions", target: "Tricep Long Head", sets: 4, reps: "12-15", rest: 90 },
+                        { id: "thu_3", name: "Face Pulls", target: "Rear Delts", sets: 3, reps: "15-20", rest: 60 },
+                        { id: "thu_4", name: "Skull Crushers", target: "Triceps", sets: 3, reps: "10-12", rest: 90 }
+                    ]
+                },
+                fri: {
+                    name: "Bicep Peak & Rear Delts",
+                    exercises: [
+                        { id: "fri_1", name: "Supinating DB Curls", target: "Biceps", sets: 4, reps: "10-12", rest: 75 },
+                        { id: "fri_2", name: "Rear Delt Flys", target: "Rear Delts", sets: 4, reps: "15-20", rest: 60 },
+                        { id: "fri_3", name: "Incline DB Curls", target: "Bicep Stretch", sets: 3, reps: "10-12", rest: 90 },
+                        { id: "fri_4", name: "Hammer Curls", target: "Brachialis", sets: 3, reps: "12-15", rest: 60 }
+                    ]
+                },
+                sat: {
+                    name: "V-Taper Breadth",
+                    exercises: [
+                        { id: "sat_1", name: "Wide Lat Pulldowns", target: "Lats", sets: 4, reps: "8-10", rest: 120 },
+                        { id: "sat_2", name: "Cable Lateral Raises", target: "Side Delts", sets: 4, reps: "15-20", rest: 60 },
+                        { id: "sat_3", name: "Upright Rows (Cable)", target: "Shoulder Width", sets: 3, reps: "10-12", rest: 90 },
+                        { id: "sat_4", name: "Straight Arm Pulldown", target: "Lat Width", sets: 3, reps: "12-15", rest: 60 }
+                    ]
+                },
+                sun: {
+                    name: "Arm Thickness & Detail",
+                    exercises: [
+                        { id: "sun_1", name: "Close Grip Bench", target: "Triceps/Chest", sets: 4, reps: "8-10", rest: 120 },
+                        { id: "sun_2", name: "Preacher Curls", target: "Short Head", sets: 3, reps: "10-12", rest: 90 },
+                        { id: "sun_3", name: "Tricep Rope Pushdown", target: "Tricep Detail", sets: 4, reps: "12-15", rest: 60 },
+                        { id: "sun_4", name: "Reverse Grip Curls", target: "Forearms", sets: 3, reps: "12-15", rest: 60 }
+                    ]
+                }
             },
-            fri: {
-                name: "Bicep Peak & Rear Delts",
-                exercises: [
-                    { id: "fri_1", name: "Supinating DB Curls", target: "Biceps", sets: 4, reps: "10-12", rest: 75 },
-                    { id: "fri_2", name: "Rear Delt Flys", target: "Rear Delts", sets: 4, reps: "15-20", rest: 60 },
-                    { id: "fri_3", name: "Incline DB Curls", target: "Bicep Stretch", sets: 3, reps: "10-12", rest: 90 },
-                    { id: "fri_4", name: "Hammer Curls", target: "Brachialis", sets: 3, reps: "12-15", rest: 60 }
-                ]
-            },
-            sat: {
-                name: "V-Taper Breadth",
-                exercises: [
-                    { id: "sat_1", name: "Wide Lat Pulldowns", target: "Lats", sets: 4, reps: "8-10", rest: 120 },
-                    { id: "sat_2", name: "Cable Lateral Raises", target: "Side Delts", sets: 4, reps: "15-20", rest: 60 },
-                    { id: "sat_3", name: "Upright Rows (Cable)", target: "Shoulder Width", sets: 3, reps: "10-12", rest: 90 },
-                    { id: "sat_4", name: "Straight Arm Pulldown", target: "Lat Width", sets: 3, reps: "12-15", rest: 60 }
-                ]
-            },
-            sun: {
-                name: "Arm Thickness & Detail",
-                exercises: [
-                    { id: "sun_1", name: "Close Grip Bench", target: "Triceps/Chest", sets: 4, reps: "8-10", rest: 120 },
-                    { id: "sun_2", name: "Preacher Curls", target: "Short Head", sets: 3, reps: "10-12", rest: 90 },
-                    { id: "sun_3", name: "Tricep Rope Pushdown", target: "Tricep Detail", sets: 4, reps: "12-15", rest: 60 },
-                    { id: "sun_4", name: "Reverse Grip Curls", target: "Forearms", sets: 3, reps: "12-15", rest: 60 }
-                ]
+            "7-Day Pre-Uni Split": {
+                mon: {
+                    name: "Push A (Chest Focus)",
+                    exercises: [
+                        { id: "mon_1", name: "Incline Barbell Press", target: "Upper Chest", sets: 4, reps: "6-8", rest: 120 },
+                        { id: "mon_2", name: "Machine Chest Press", target: "Mid Chest", sets: 3, reps: "10-12", rest: 90 },
+                        { id: "mon_3", name: "Cable Flys", target: "Chest Stretch", sets: 3, reps: "15-20", rest: 60 },
+                        { id: "mon_4", name: "Dips (Weighted)", target: "Triceps/Lower Chest", sets: 3, reps: "8-10", rest: 90 }
+                    ]
+                },
+                tue: {
+                    name: "Pull A (Width Focus)",
+                    exercises: [
+                        { id: "tue_1", name: "Pullups (Weighted)", target: "Lats", sets: 4, reps: "6-10", rest: 120 },
+                        { id: "tue_2", name: "Single Arm Lat Pulldown", target: "Lat Detail", sets: 3, reps: "12-15", rest: 90 },
+                        { id: "tue_3", name: "Straight Arm Pulldown", target: "Lat Width", sets: 3, reps: "15-20", rest: 60 },
+                        { id: "tue_4", name: "Hammer Curls", target: "Brachialis", sets: 3, reps: "12-15", rest: 60 }
+                    ]
+                },
+                wed: {
+                    name: "Legs A (Quads/Calves)",
+                    exercises: [
+                        { id: "wed_1", name: "Barbell Squats", target: "Quads", sets: 4, reps: "6-8", rest: 180 },
+                        { id: "wed_2", name: "Leg Press", target: "Quad Volume", sets: 3, reps: "12-15", rest: 120 },
+                        { id: "wed_3", name: "Leg Extensions", target: "Quad Isolation", sets: 3, reps: "15-20", rest: 60 },
+                        { id: "wed_4", name: "Seated Calf Raises", target: "Calves", sets: 4, reps: "15-20", rest: 60 }
+                    ]
+                },
+                thu: {
+                    name: "V-Taper (Shoulders/Rear Delts)",
+                    exercises: [
+                        { id: "thu_1_7", name: "Overhead Press", target: "Delts", sets: 4, reps: "8-10", rest: 120 },
+                        { id: "thu_2_7", name: "DB Lateral Raises", target: "Side Delts", sets: 5, reps: "15-20", rest: 45 },
+                        { id: "thu_3_7", name: "Cable Lateral Raises", target: "Side Delt Constant", sets: 3, reps: "15-20", rest: 60 },
+                        { id: "thu_4_7", name: "Face Pulls", target: "Rear Delts", sets: 4, reps: "20", rest: 60 }
+                    ]
+                },
+                fri: {
+                    name: "Arms & Thickness",
+                    exercises: [
+                        { id: "fri_1_7", name: "Skull Crushers", target: "Triceps", sets: 4, reps: "10-12", rest: 90 },
+                        { id: "fri_2_7", name: "Preacher Curls", target: "Bicep Peak", sets: 4, reps: "10-12", rest: 90 },
+                        { id: "fri_3_7", name: "Rope Pushdowns", target: "Tricep Detail", sets: 3, reps: "15-20", rest: 60 },
+                        { id: "fri_4_7", name: "Incline DB Curls", target: "Bicep Stretch", sets: 3, reps: "12", rest: 60 }
+                    ]
+                },
+                sat: {
+                    name: "Posterior Chain (Back/Hams)",
+                    exercises: [
+                        { id: "sat_1_7", name: "Deadlifts", target: "Total Back/Hams", sets: 3, reps: "5", rest: 240 },
+                        { id: "sat_2_7", name: "Chest Supported Rows", target: "Back Thickness", sets: 4, reps: "10-12", rest: 90 },
+                        { id: "sat_3_7", name: "Lying Leg Curls", target: "Hams", sets: 3, reps: "12-15", rest: 60 },
+                        { id: "sat_4_7", name: "Back Extensions", target: "Lower Back", sets: 3, reps: "15", rest: 60 }
+                    ]
+                },
+                sun: {
+                    name: "Weak Point Polish",
+                    exercises: [
+                        { id: "sun_1_7", name: "DB Lateral Raises", target: "Shoulder Width", sets: 4, reps: "20", rest: 30 },
+                        { id: "sun_2_7", name: "Spider Curls", target: "Bicep Peak", sets: 3, reps: "12-15", rest: 60 },
+                        { id: "sun_3_7", name: "Diamond Pushups", target: "Tricep Detail", sets: 3, reps: "AMRAP", rest: 60 },
+                        { id: "sun_4_7", name: "Hanging Leg Raises", target: "Abs", sets: 3, reps: "15", rest: 60 }
+                    ]
+                }
             }
         };
 
         // STATE MANAGEMENT
-        let db = JSON.parse(localStorage.getItem('gym_pwa_data')) || {
-            logs: [],
-            history: [],
-            settings: { muscleMemory: false },
-            streak: 0
-        };
+        let db = JSON.parse(localStorage.getItem('gym_pwa_data') || '{}');
+        if (!db.history) {
+            db = {
+                logs: [],
+                history: [],
+                settings: { muscleMemory: false, activeSplit: "4-Day Uni Split" },
+                streak: 0
+            };
+        }
+        // Migration & Safety Checks
+        if (!db.settings) db.settings = { muscleMemory: false, activeSplit: "4-Day Uni Split" };
+        if (!db.settings.activeSplit || !SPLITS[db.settings.activeSplit]) db.settings.activeSplit = "4-Day Uni Split";
 
         function saveDB() {
             localStorage.setItem('gym_pwa_data', JSON.stringify(db));
@@ -383,7 +492,7 @@
             if (exLogs.length === 0) return "Establishing baseline. Focus on perfect form.";
             
             const lastSession = exLogs[exLogs.length - 1];
-            const prevVol = lastSession.sets.reduce((acc, s) => acc + (s.w * s.r), 0);
+            const prevVol = lastSession.sets.reduce((acc, s) => acc + (s ? (s.w * s.r) : 0), 0);
             
             let insight = `Prev Volume: ${prevVol}kg. `;
             
@@ -415,23 +524,27 @@
             
             document.getElementById('current-date').innerText = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
             
-            if (ROUTINE[dayKey]) {
+            const routine = SPLITS[db.settings.activeSplit] || SPLITS["4-Day Uni Split"];
+            if (routine[dayKey]) {
                 loadWorkout(dayKey);
             } else {
+                document.getElementById('workout-container').innerHTML = '';
                 document.getElementById('no-workout').style.display = 'block';
                 document.getElementById('day-tag').innerText = "REST";
             }
 
             document.getElementById('muscle-memory-toggle').checked = db.settings.muscleMemory;
+            document.getElementById('routine-select').value = db.settings.activeSplit;
         }
 
         function loadWorkout(dayKey) {
-            const workout = ROUTINE[dayKey];
+            const routine = SPLITS[db.settings.activeSplit] || SPLITS["4-Day Uni Split"];
+            const workout = routine[dayKey];
             document.getElementById('no-workout').style.display = 'none';
             document.getElementById('day-tag').innerText = dayKey.toUpperCase();
             
             const container = document.getElementById('workout-container');
-            container.innerHTML = `<h2>${workout.name}</h2>`;
+            container.innerHTML = `<h2>${workout.name}</h2><p class="sub" style="margin-bottom:15px">${db.settings.activeSplit}</p>`;
             
             workout.exercises.forEach(ex => {
                 const insight = getCoachInsight(ex.id);
@@ -472,6 +585,7 @@
             const bar = document.getElementById('timer-bar');
             const count = document.getElementById('timer-count');
             bar.style.display = 'block';
+            bar.style.background = 'var(--accent)';
             
             let timeLeft = seconds;
             count.innerText = timeLeft;
@@ -483,7 +597,6 @@
                     clearInterval(timerInterval);
                     bar.style.background = '#32d74b';
                     setTimeout(() => bar.style.display = 'none', 3000);
-                    // Vibrate if supported
                     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
                 }
             }, 1000);
@@ -503,7 +616,6 @@
             btn.classList.add('done');
             startTimer(rest);
 
-            // Save to history
             const timestamp = new Date().toISOString().split('T')[0];
             let entry = db.history.find(h => h.date === timestamp && h.exId === exId);
             
@@ -530,12 +642,27 @@
             renderStats();
         }
 
+        function saveRestBodyweight() {
+            const w = document.getElementById('rest-bodyweight').value;
+            if (!w) return alert("Enter weight");
+            
+            const entry = {
+                date: new Date().toISOString().split('T')[0],
+                weight: w,
+                notes: "Rest Day Log"
+            };
+            db.logs.push(entry);
+            saveDB();
+            alert("Bodyweight Logged");
+            document.getElementById('rest-bodyweight').value = '';
+        }
+
         // STATS & CHARTS
         function renderStats() {
+            renderConsistencyGrid();
+            
             const chart = document.getElementById('volume-chart');
             const history = db.history;
-            
-            // Group by date
             const dailyVol = {};
             history.forEach(h => {
                 const vol = h.sets.reduce((acc, s) => acc + (s ? (s.w * s.r) : 0), 0);
@@ -557,13 +684,11 @@
                 svgContent += `<rect x="${x}" y="${y}" width="${barWidth}" height="${height}" class="bar" />`;
                 svgContent += `<text x="${x + 2}" y="145" fill="#8e8e93" font-size="8">${d.split('-')[2]}</text>`;
             });
-            
             chart.innerHTML = svgContent;
             
             const total = Object.values(dailyVol).reduce((a,b) => a+b, 0);
             document.getElementById('total-vol-label').innerText = `Total Volume: ${total.toLocaleString()}kg`;
 
-            // History List
             const list = document.getElementById('history-list');
             list.innerHTML = '<h2>Recent Logs</h2>';
             db.logs.slice(-5).reverse().forEach(l => {
@@ -574,17 +699,83 @@
                         <b>${l.date}</b>
                         <span>${l.weight}kg</span>
                     </div>
-                    <div class="sub">Waist: ${l.waist}cm | Arm: ${l.arm}cm</div>
-                    <div style="margin-top:10px; font-size:12px italic">${l.notes}</div>
+                    ${l.waist ? `<div class="sub">Waist: ${l.waist}cm | Arm: ${l.arm}cm</div>` : ''}
+                    <div style="margin-top:10px; font-size:12px italic">${l.notes || ''}</div>
                 `;
                 list.appendChild(card);
             });
+        }
+
+        function renderConsistencyGrid() {
+            const grid = document.getElementById('consistency-grid');
+            grid.innerHTML = '';
+            const today = new Date();
+            const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+            const routine = SPLITS[db.settings.activeSplit];
+
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(today.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                const dayKey = days[d.getDay()];
+                const isWorkoutDay = !!routine[dayKey];
+                
+                const hasHistory = db.history.some(h => h.date === dateStr);
+                const dot = document.createElement('div');
+                dot.className = 'day-dot';
+                dot.innerText = dayKey.toUpperCase()[0];
+                
+                if (hasHistory) {
+                    dot.classList.add('done');
+                    dot.innerHTML = '<i class="ti ti-check"></i>';
+                } else if (isWorkoutDay && d < today) {
+                    dot.classList.add('missed');
+                    dot.innerHTML = '<i class="ti ti-x"></i>';
+                } else if (!isWorkoutDay) {
+                    dot.classList.add('rest');
+                }
+                grid.appendChild(dot);
+            }
+        }
+
+        // EXPORT
+        function exportCSV() {
+            let csv = "Type,Date,ExerciseID,Set,Weight,Reps,Bodyweight,Waist,Arm,Notes\n";
+            
+            // History (Workouts)
+            db.history.forEach(h => {
+                h.sets.forEach((s, i) => {
+                    if (!s) return;
+                    csv += `Workout,${h.date},${h.exId},${i+1},${s.w},${s.r},,,, \n`;
+                });
+            });
+            
+            // Logs (Weight/Photos)
+            db.logs.forEach(l => {
+                csv += `Log,${l.date},,,, ,${l.weight},${l.waist || ''},${l.arm || ''},"${l.notes || ''}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `elite_trainer_export_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
 
         // SETTINGS
         function updateSettings() {
             db.settings.muscleMemory = document.getElementById('muscle-memory-toggle').checked;
             saveDB();
+        }
+
+        function switchRoutine() {
+            db.settings.activeSplit = document.getElementById('routine-select').value;
+            saveDB();
+            initApp();
         }
 
         function clearData() {
@@ -594,7 +785,6 @@
             }
         }
 
-        // SERVICE WORKER
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js');
         }
