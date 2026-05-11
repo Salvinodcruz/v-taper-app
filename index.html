@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>WORKOUT TRACKER | V-TAPER</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
     <style>
         :root {
             --bg: #121212;
@@ -16,370 +17,508 @@
             --border: #333333;
             --input-bg: #2a2a2a;
         }
-
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, system-ui, sans-serif; }
         body { background: var(--bg); color: var(--text); padding-bottom: 100px; line-height: 1.4; }
 
-        header { padding: 20px; border-bottom: 1px solid var(--border); }
-        h1 { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .header-left h1 { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
         .date-sub { color: var(--text-dim); font-size: 14px; margin-top: 4px; }
+        .settings-btn { background: var(--card); border: 1px solid var(--border); padding: 10px; border-radius: 12px; cursor: pointer; }
 
-        /* Tabs */
-        .tabs-container { 
-            display: flex; 
-            gap: 8px; 
-            padding: 15px 20px; 
-            overflow-x: auto; 
-            scrollbar-width: none;
-        }
-        .tab {
-            background: var(--card);
-            border: 1px solid var(--border);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            white-space: nowrap;
-            color: var(--text-dim);
-            cursor: pointer;
-        }
+        .tabs-container { display: flex; gap: 8px; padding: 15px 20px; overflow-x: auto; scrollbar-width: none; }
+        .tabs-container::-webkit-scrollbar { display: none; }
+        .tab { background: var(--card); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; font-size: 13px; white-space: nowrap; color: var(--text-dim); cursor: pointer; transition: all .15s; }
         .tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .tab.rest-tab { opacity: .5; cursor: default; }
+        .tab.done-tab { background: #1a3a1a; color: #4caf50; border-color: #4caf50; }
 
-        .progress-header { padding: 0 20px; font-size: 12px; color: var(--text-dim); display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .progress-header { padding: 0 20px 12px; font-size: 12px; color: var(--text-dim); display: flex; justify-content: space-between; }
+        .prog-bar-bg { margin: 0 20px 12px; background: #2a2a2a; border-radius: 99px; height: 4px; overflow: hidden; }
+        .prog-bar-fill { height: 4px; border-radius: 99px; background: var(--accent); transition: width .3s; }
 
-        /* Exercise Cards */
-        .exercise-card {
-            background: var(--card);
-            margin: 0 12px 12px;
-            border-radius: 12px;
-            padding: 16px;
-            border: 1px solid var(--border);
-        }
-        .ex-header { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
-        .check-circle { width: 24px; height: 24px; border: 2px solid var(--border); border-radius: 50%; flex-shrink: 0; margin-top: 2px; }
-        .check-circle.done { background: var(--accent); border-color: var(--accent); position: relative; }
-        .check-circle.done::after { content: '✓'; position: absolute; color: white; font-size: 14px; left: 5px; top: 1px; }
+        .rest-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin: 12px; padding: 40px 20px; text-align: center; }
+        .rest-card i { font-size: 40px; color: var(--text-dim); margin-bottom: 12px; display: block; }
+        .rest-card h2 { font-size: 18px; margin-bottom: 8px; }
+        .rest-card p { color: var(--text-dim); font-size: 14px; line-height: 1.6; }
 
-        .ex-info h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
-        .ex-meta { font-size: 13px; color: var(--text-dim); display: flex; gap: 8px; align-items: center; }
-        .rpe-tag { background: #333; color: #4dabf7; padding: 2px 8px; border-radius: 10px; font-weight: 700; font-size: 11px; }
+        .exercise-card { background: var(--card); margin: 0 12px 12px; border-radius: 12px; padding: 16px; border: 1px solid var(--border); transition: border-color .2s; }
+        .exercise-card.done { border-color: #4caf50; }
+        .ex-header { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; cursor: pointer; }
+        .check-circle { width: 26px; height: 26px; border: 2px solid var(--border); border-radius: 50%; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; transition: all .2s; }
+        .check-circle.done { background: #4caf50; border-color: #4caf50; }
+        .check-circle.done i { color: white; font-size: 14px; }
+        .check-circle i { color: transparent; font-size: 14px; }
 
-        .cue-box {
-            background: var(--cue-bg);
-            color: var(--cue-text);
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 13px;
-            margin-bottom: 15px;
-            border-left: 4px solid #ffc107;
-        }
+        .ex-info { flex: 1; min-width: 0; }
+        .ex-info h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; line-height: 1.3; }
+        .ex-meta { font-size: 12px; color: var(--text-dim); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .rpe-tag { padding: 2px 8px; border-radius: 10px; font-weight: 700; font-size: 11px; }
+        .rpe7 { background: #1a3a1a; color: #4caf50; }
+        .rpe8 { background: #3a2a00; color: #ffc107; }
+        .rpe9 { background: #3a1a00; color: #ff9800; }
+        .rpe10 { background: #3a0000; color: #f44336; }
 
-        .set-row {
-            display: grid;
-            grid-template-columns: 40px 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 8px;
-            align-items: center;
-        }
+        .chevron { font-size: 18px; color: var(--text-dim); transition: transform .2s; flex-shrink: 0; margin-top: 2px; }
+        .exercise-card.open .chevron { transform: rotate(180deg); }
+
+        .ex-body { display: none; }
+        .exercise-card.open .ex-body { display: block; }
+
+        .cue-box { background: var(--cue-bg); color: var(--cue-text); padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; border-left: 4px solid #ffc107; line-height: 1.5; }
+
+        .set-header { display: grid; grid-template-columns: 44px 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+        .set-header span { font-size: 11px; color: var(--text-dim); text-align: center; text-transform: uppercase; letter-spacing: .04em; }
+        .set-header span:first-child { text-align: left; }
+        .set-row { display: grid; grid-template-columns: 44px 1fr 1fr; gap: 8px; margin-bottom: 8px; align-items: center; }
         .set-label { font-size: 13px; color: var(--text-dim); }
-        .input-field {
-            background: var(--input-bg);
-            border: 1px solid var(--border);
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 15px;
-        }
+        .input-field { background: var(--input-bg); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 8px; text-align: center; font-size: 15px; width: 100%; font-family: inherit; }
+        .input-field:focus { outline: none; border-color: var(--accent); }
 
-        .btn-add-set {
-            width: 100%;
-            background: transparent;
-            border: 1px solid var(--border);
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 14px;
-            margin-top: 8px;
-            cursor: pointer;
-        }
+        .btn-add-set { width: 100%; background: transparent; border: 1px solid var(--border); color: var(--text-dim); padding: 9px; border-radius: 8px; font-size: 13px; margin-top: 4px; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 4px; }
 
-        .footer-action {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            padding: 20px;
-            background: rgba(18, 18, 18, 0.9);
-            backdrop-filter: blur(10px);
-        }
-        .btn-complete {
-            width: 100%;
-            background: #2a2a2a;
-            border: 1px solid var(--border);
-            color: white;
-            padding: 15px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 16px;
-        }
+        .footer-action { position: fixed; bottom: 0; left: 0; width: 100%; padding: 16px 20px; background: rgba(18,18,18,0.95); backdrop-filter: blur(10px); border-top: 1px solid var(--border); }
+        .btn-complete { width: 100%; background: #1a3a1a; border: 1px solid #4caf50; color: #4caf50; padding: 15px; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; font-family: inherit; transition: all .2s; }
+        .btn-complete:disabled { background: #2a2a2a; border-color: var(--border); color: var(--text-dim); cursor: not-allowed; }
 
-        /* Stats View */
-        .stats-view { display: none; padding: 20px; }
-        .active-view { display: block; }
+        /* Progress board */
+        .pb { padding: 16px; }
+        .pb-h { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+        .wk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+        .wk-c { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+        .wk-c.done { border-color: #4caf50; }
+        .wk-c.restday { opacity: .5; }
+        .wk-dl { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+        .wk-nm { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+        .wk-c.done .wk-nm { color: #4caf50; }
+        .wk-st { font-size: 11px; color: var(--text-dim); display: flex; align-items: center; gap: 4px; }
+        .vol-c { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        .vol-n { font-size: 30px; font-weight: 700; }
+        .vol-l { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+        .streak-row { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .sdot { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; border: 1px solid var(--border); color: var(--text-dim); background: var(--card); flex-shrink: 0; }
+        .sdot.done { background: var(--accent); color: white; border-color: var(--accent); }
+        .sdot.restday { opacity: .4; font-size: 9px; }
+        .rst-btn { background: transparent; border: 1px solid var(--border); color: var(--text-dim); padding: 10px 16px; border-radius: 8px; font-family: inherit; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+
+        /* Settings */
+        .settings-panel { padding: 20px; }
+        .settings-panel h1 { font-size: 20px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+        .settings-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        .settings-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+        .settings-card p { color: var(--text-dim); font-size: 13px; margin-bottom: 14px; }
+        .select-field { width: 100%; background: var(--input-bg); color: white; border: 1px solid var(--border); padding: 12px; border-radius: 8px; font-size: 15px; font-family: inherit; cursor: pointer; }
+        .back-btn { width: 100%; background: var(--accent); border: none; color: white; padding: 14px; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+        /* Nav bar bottom (views) */
+        .view { display: none; }
+        .view.active { display: block; }
     </style>
 </head>
 <body>
 
-    <div id="dash-view" class="active-view">
-        <header style="display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid var(--border);">
-            <div>
-                <h1 style="font-size: 22px; font-weight: 700;"><i class="ti ti-barbell"></i> Workout tracker</h1>
-                <p class="date-sub" id="display-date"></p>
-            </div>
-            <div style="background: var(--card); border: 1px solid var(--border); padding: 8px; border-radius: 12px; cursor: pointer;" onclick="showView('settings')">
-                <i class="ti ti-settings" style="font-size: 20px; color: var(--text);"></i>
-            </div>
-        </header>
-
-        <div class="tabs-container" id="day-tabs"></div>
-
-        <div class="progress-header">
-            <span id="exercise-count">0 / 0 exercises</span>
-            <span id="progress-percent">0%</span>
+<!-- DASHBOARD VIEW -->
+<div id="view-dash" class="view active">
+    <header>
+        <div class="header-left">
+            <h1><i class="ti ti-barbell" aria-hidden="true"></i> Workout tracker</h1>
+            <p class="date-sub" id="display-date"></p>
         </div>
-
-        <div id="workout-content"></div>
-
-        <div class="footer-action">
-            <button class="btn-complete" onclick="completeWorkout()">Mark workout complete</button>
+        <div class="settings-btn" onclick="showView('settings')" aria-label="Settings">
+            <i class="ti ti-settings" style="font-size:20px"></i>
         </div>
+    </header>
+
+    <div class="tabs-container" id="day-tabs"></div>
+
+    <div class="progress-header">
+        <span id="exercise-count">0 / 0 exercises</span>
+        <span id="progress-percent">0%</span>
     </div>
+    <div class="prog-bar-bg"><div class="prog-bar-fill" id="prog-fill" style="width:0%"></div></div>
 
-    <!-- Settings View -->
-    <div id="settings-view" class="stats-view" style="padding: 20px;">
-        <header style="margin-bottom: 20px;">
-            <h1 style="font-size: 22px; font-weight: 700;">⚙️ Settings</h1>
-        </header>
-        
-        <div style="background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px;">
-            <h3 style="font-size: 16px; margin-bottom: 8px;">Active Routine</h3>
-            <p style="color: var(--text-dim); font-size: 13px; margin-bottom: 16px;">Switch your training split</p>
-            <select id="routine-select" class="input-field" onchange="switchRoutine()" style="width: 100%; text-align: left; background: var(--input-bg); color: white; border: 1px solid var(--border); padding: 12px; border-radius: 8px; font-size: 15px;">
-                <option value="4-Day Uni Split">4-Day Uni Split</option>
-                <option value="7-Day Pre-Uni Split">7-Day Pre-Uni Split</option>
+    <div id="workout-content"></div>
+
+    <div class="footer-action">
+        <button class="btn-complete" id="complete-btn" onclick="completeWorkout()" disabled>Mark workout complete</button>
+    </div>
+</div>
+
+<!-- PROGRESS BOARD VIEW -->
+<div id="view-progress" class="view">
+    <header>
+        <div class="header-left">
+            <h1><i class="ti ti-chart-bar" aria-hidden="true"></i> Progress board</h1>
+        </div>
+        <div class="settings-btn" onclick="showView('dash')" aria-label="Back">
+            <i class="ti ti-arrow-left" style="font-size:20px"></i>
+        </div>
+    </header>
+    <div class="pb">
+        <div class="pb-h">Weekly overview</div>
+        <div class="streak-row" id="streak-row"></div>
+        <div class="wk-grid" id="wk-grid"></div>
+        <div class="vol-c">
+            <div class="vol-n" id="vol-n">0 kg</div>
+            <div class="vol-l">total volume logged this week</div>
+        </div>
+        <button class="rst-btn" onclick="resetAll()"><i class="ti ti-refresh" aria-hidden="true"></i> Reset all progress</button>
+    </div>
+</div>
+
+<!-- SETTINGS VIEW -->
+<div id="view-settings" class="view">
+    <header>
+        <div class="header-left">
+            <h1><i class="ti ti-settings" aria-hidden="true"></i> Settings</h1>
+        </div>
+        <div class="settings-btn" onclick="showView('dash')" aria-label="Back">
+            <i class="ti ti-arrow-left" style="font-size:20px"></i>
+        </div>
+    </header>
+    <div class="settings-panel">
+        <div class="settings-card">
+            <h3>Active routine</h3>
+            <p>Switch your training split</p>
+            <select id="routine-select" class="select-field" onchange="switchRoutine()">
+                <option value="4day">4-Day Split (Thu–Sun)</option>
+                <option value="7day">7-Day Split (Mon–Sun)</option>
             </select>
         </div>
-
-        <button class="btn-add-set" onclick="showView('dash')" style="margin-top: 20px; background: var(--accent); border: none; font-weight: 600;">Back to Dashboard</button>
+        <button class="back-btn" onclick="showView('dash')"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back to dashboard</button>
     </div>
+</div>
 
-    <script>
-        // --- DATA STRUCTURE ---
-        const SPLITS = {
-            "4-Day Uni Split": {
-                mon: {
-                    name: "Push",
-                    exercises: [
-                        { id: "p1", name: "Incline barbell press", sets: 4, reps: "6-8", rest: 150, rpe: 8, cue: "30° incline. Pause 1s at chest. Full ROM. Upper chest emphasis." },
-                        { id: "p2", name: "Flat DB press", sets: 3, reps: "10-12", rest: 90, rpe: 8, cue: "Full stretch at bottom. Squeeze hard at top. Don't flare elbows." },
-                        { id: "p3", name: "Cable lateral raise (unilateral)", sets: 4, reps: "15-20", rest: 60, rpe: 9, cue: "KEY EXERCISE. Lead with elbow, not wrist. Slow 3s eccentric. Cable at ankle height." },
-                        { id: "p4", name: "Machine shoulder press", sets: 3, reps: "10-12", rest: 90, rpe: 8, cue: "Don't lock out at top. Controlled. Full range." },
-                        { id: "p5", name: "Tricep rope pushdown", sets: 3, reps: "12-15", rest: 60, rpe: 8, cue: "Elbows pinned. Spread rope at bottom. Feel long head stretch at top." },
-                        { id: "p6", name: "Overhead DB tricep extension", sets: 3, reps: "10-12", rest: 75, rpe: 8, cue: "Slow on the way down. Elbows don't flare. Max long head stretch." },
-                        { id: "p7", name: "Cable chest fly (cross-body)", sets: 3, reps: "15", rest: 60, rpe: 7, cue: "High-to-low. Squeeze at centre. Optional if low energy." }
-                    ]
-                },
-                tue: {
-                    name: "Pull",
-                    exercises: [
-                        { id: "pl1", name: "Pull-up or lat pulldown", sets: 4, reps: "6-10", rest: 150, rpe: 9, cue: "Wide grip. Initiate with lats. Pull elbows to pockets." },
-                        { id: "pl2", name: "Seated cable row (wide grip)", sets: 4, reps: "10-12", rest: 90, rpe: 8, cue: "Chest to pad, full stretch forward, hard squeeze. Row to lower sternum." },
-                        { id: "pl3", name: "Face pull (rope, high cable)", sets: 4, reps: "15-20", rest: 60, rpe: 8, cue: "Pull to forehead. Externally rotate at end. Hold 2s." },
-                        { id: "pl4", name: "DB rear delt fly (bent over)", sets: 3, reps: "15", rest: 60, rpe: 8, cue: "Chest on incline bench. Lead with elbows. Don't shrug. 3s eccentric." },
-                        { id: "pl5", name: "EZ bar curl (standing)", sets: 4, reps: "8-10", rest: 90, rpe: 8, cue: "No swinging. Full extension. Supinate at top. Slow 3s down." },
-                        { id: "pl6", name: "Incline DB curl", sets: 3, reps: "10-12", rest: 75, rpe: 9, cue: "Elbows behind body. Long head stretch. This builds the peak." },
-                        { id: "pl7", name: "Hammer curl (cross-body)", sets: 3, reps: "12", rest: 60, rpe: 8, cue: "Alternating, controlled. Builds brachialis width." }
-                    ]
-                },
-                wed: { name: "REST DAY", exercises: [] },
-                thu: {
-                    name: "Shoulders + Arms",
-                    exercises: [
-                        { id: "sa1", name: "DB lateral raise — heavy", sets: 5, reps: "12-15", rest: 75, rpe: 9, cue: "Week 3-4: drop set on final set — drop 40%, grind 10 more reps." },
-                        { id: "sa2", name: "Cable lateral raise (unilateral)", sets: 4, reps: "15-20", rest: 60, rpe: 10, cue: "Different angle from DB. Same elbow-lead cue. 3s eccentric." },
-                        { id: "sa3", name: "Arnold press", sets: 3, reps: "10-12", rest: 90, rpe: 8, cue: "Hits all 3 delt heads. Rotate slowly. Don't ego-heavy." },
-                        { id: "sa4", name: "Close-grip bench press", sets: 4, reps: "8-10", rest: 120, rpe: 8, cue: "Shoulder-width grip. Lock out hard at top. 3s eccentric." },
-                        { id: "sa5", name: "EZ bar skull crusher", sets: 3, reps: "10-12", rest: 75, rpe: 8, cue: "Lower to forehead. Elbows vertical. Full extension." },
-                        { id: "sa6", name: "Concentration curl", sets: 3, reps: "12-15", rest: 60, rpe: 9, cue: "Full supination. Peak squeeze 2s. Slow down. No momentum." },
-                        { id: "sa7", name: "Cable curl (supinated)", sets: 3, reps: "12-15", rest: 60, rpe: 10, cue: "Partials on final set — squeeze bottom half for 10 more after failure." }
-                    ]
-                },
-                fri: { name: "Rest / Football ⚽", exercises: [] },
-                sat: {
-                    name: "Legs + Core",
-                    exercises: [
-                        { id: "lc1", name: "Barbell back squat", sets: 4, reps: "6-8", rest: 150, rpe: 8, cue: "Break parallel. Brace core. Drive knees out. Do NOT skip this." },
-                        { id: "lc2", name: "Romanian deadlift (RDL)", sets: 4, reps: "10-12", rest: 120, rpe: 8, cue: "Hip hinge, soft knees, bar on legs. Hamstring stretch is the point." },
-                        { id: "lc3", name: "Leg press", sets: 3, reps: "12-15", rest: 90, rpe: 8, cue: "High wide foot = glute/ham emphasis. Full ROM — no quarter reps." },
-                        { id: "lc4", name: "Leg curl (lying or seated)", sets: 3, reps: "12-15", rest: 75, rpe: 9, cue: "Full stretch. Squeeze hard at peak. 2s hold." },
-                        { id: "lc5", name: "Hanging leg raise", sets: 3, reps: "12-15", rest: 60, rpe: 8, cue: "Posterior tilt at top. Don't swing." },
-                        { id: "lc6", name: "Plank (weighted)", sets: 3, reps: "45-60s", rest: 60, rpe: 8, cue: "Squeeze glutes and abs simultaneously. Don't let hips sag." },
-                        { id: "lc7", name: "Cable crunch (kneeling)", sets: 3, reps: "15-20", rest: 60, rpe: 8, cue: "Round your spine. Elbow-to-knees. Not a hip flexor exercise." }
-                    ]
-                },
-                sun: { name: "REST DAY", exercises: [] }
-            },
-            "7-Day Pre-Uni Split": {
-                mon: { name: "Full Body A", exercises: [{ id: "fb1", name: "Compound Lift", sets: 3, reps: "8-10", rest: 120, rpe: 8, cue: "Focus on form." }] },
-                tue: { name: "Full Body B", exercises: [{ id: "fb2", name: "Isolation Lift", sets: 3, reps: "12-15", rest: 60, rpe: 7, cue: "Mind-muscle connection." }] },
-                wed: { name: "REST", exercises: [] },
-                thu: { name: "Full Body C", exercises: [{ id: "fb3", name: "Compound Lift", sets: 3, reps: "8-10", rest: 120, rpe: 8, cue: "Focus on form." }] },
-                fri: { name: "Full Body D", exercises: [{ id: "fb4", name: "Isolation Lift", sets: 3, reps: "12-15", rest: 60, rpe: 7, cue: "Mind-muscle connection." }] },
-                sat: { name: "REST", exercises: [] },
-                sun: { name: "Weak Point Work", exercises: [{ id: "fb5", name: "Accessories", sets: 3, reps: "15-20", rest: 60, rpe: 8, cue: "Finish strong." }] }
-            }
-        };
+<script>
+const SPLITS = {
+    "4day": {
+        label: "4-Day Split",
+        days: {
+            thu: { name: "Push", rest: false, exercises: [
+                { name: "Incline barbell press", sets: 4, reps: "6–8", rest: "2.5 min", rpe: 8, cue: "30° incline. Pause 1s at chest. Full ROM. Upper chest emphasis." },
+                { name: "Flat DB press", sets: 3, reps: "10–12", rest: "90s", rpe: 8, cue: "Full stretch at bottom. Squeeze hard at top. Don't flare elbows." },
+                { name: "Cable lateral raise (unilateral)", sets: 4, reps: "15–20", rest: "60s", rpe: 9, cue: "KEY EXERCISE. Lead with elbow, not wrist. Slow 3s eccentric. Cable at ankle height." },
+                { name: "Machine shoulder press", sets: 3, reps: "10–12", rest: "90s", rpe: 8, cue: "Don't lock out at top. Controlled. Full range." },
+                { name: "Tricep rope pushdown", sets: 3, reps: "12–15", rest: "60s", rpe: 8, cue: "Elbows pinned. Spread rope at bottom. Feel long head stretch at top." },
+                { name: "Overhead DB tricep extension", sets: 3, reps: "10–12", rest: "75s", rpe: 8, cue: "Slow on the way down. Elbows don't flare. Max long head stretch." },
+                { name: "Cable chest fly (cross-body)", sets: 3, reps: "15", rest: "60s", rpe: 7, cue: "High-to-low. Squeeze at centre. Optional if low energy." }
+            ]},
+            fri: { name: "Pull", rest: false, exercises: [
+                { name: "Pull-up or lat pulldown", sets: 4, reps: "6–10", rest: "2.5 min", rpe: 9, cue: "Wide grip. Initiate with lats. Pull elbows to pockets." },
+                { name: "Seated cable row (wide grip)", sets: 4, reps: "10–12", rest: "90s", rpe: 8, cue: "Chest to pad, full stretch forward, hard squeeze. Row to lower sternum." },
+                { name: "Face pull (rope, high cable)", sets: 4, reps: "15–20", rest: "60s", rpe: 8, cue: "Pull to forehead. Externally rotate at end. Hold 2s." },
+                { name: "DB rear delt fly (bent over)", sets: 3, reps: "15", rest: "60s", rpe: 8, cue: "Chest on incline bench. Lead with elbows. Don't shrug. 3s eccentric." },
+                { name: "EZ bar curl (standing)", sets: 4, reps: "8–10", rest: "90s", rpe: 8, cue: "No swinging. Full extension. Supinate at top. Slow 3s down." },
+                { name: "Incline DB curl", sets: 3, reps: "10–12", rest: "75s", rpe: 9, cue: "Elbows behind body. Long head stretch. This builds the peak." },
+                { name: "Hammer curl (cross-body)", sets: 3, reps: "12", rest: "60s", rpe: 8, cue: "Alternating, controlled. Builds brachialis width." }
+            ]},
+            sat: { name: "Shoulders + Arms", rest: false, exercises: [
+                { name: "DB lateral raise — heavy", sets: 5, reps: "12–15", rest: "75s", rpe: 9, cue: "Week 3–4: drop set on final set — drop 40%, grind 10 more reps." },
+                { name: "Cable lateral raise (unilateral)", sets: 4, reps: "15–20", rest: "60s", rpe: 10, cue: "Different angle from DB. Same elbow-lead cue. 3s eccentric." },
+                { name: "Arnold press", sets: 3, reps: "10–12", rest: "90s", rpe: 8, cue: "Hits all 3 delt heads. Rotate slowly. Don't ego-heavy." },
+                { name: "Close-grip bench press", sets: 4, reps: "8–10", rest: "2 min", rpe: 8, cue: "Shoulder-width grip. Lock out hard at top. 3s eccentric." },
+                { name: "EZ bar skull crusher", sets: 3, reps: "10–12", rest: "75s", rpe: 8, cue: "Lower to forehead. Elbows vertical. Full extension." },
+                { name: "Concentration curl", sets: 3, reps: "12–15", rest: "60s", rpe: 9, cue: "Full supination. Peak squeeze 2s. Slow down. No momentum." },
+                { name: "Cable curl (supinated)", sets: 3, reps: "12–15", rest: "60s", rpe: 10, cue: "Partials on final set — squeeze bottom half for 10 more after failure." }
+            ]},
+            sun: { name: "Legs + Core", rest: false, exercises: [
+                { name: "Barbell back squat", sets: 4, reps: "6–8", rest: "2.5 min", rpe: 8, cue: "Break parallel. Brace core. Drive knees out. Do NOT skip this." },
+                { name: "Romanian deadlift (RDL)", sets: 4, reps: "10–12", rest: "2 min", rpe: 8, cue: "Hip hinge, soft knees, bar on legs. Hamstring stretch is the point." },
+                { name: "Leg press", sets: 3, reps: "12–15", rest: "90s", rpe: 8, cue: "High wide foot = glute/ham emphasis. Full ROM — no quarter reps." },
+                { name: "Leg curl (lying or seated)", sets: 3, reps: "12–15", rest: "75s", rpe: 9, cue: "Full stretch. Squeeze hard at peak. 2s hold." },
+                { name: "Hanging leg raise", sets: 3, reps: "12–15", rest: "60s", rpe: 8, cue: "Posterior tilt at top. Don't swing." },
+                { name: "Plank (weighted)", sets: 3, reps: "45–60s", rest: "60s", rpe: 8, cue: "Squeeze glutes and abs simultaneously. Don't let hips sag." },
+                { name: "Cable crunch (kneeling)", sets: 3, reps: "15–20", rest: "60s", rpe: 8, cue: "Round your spine. Elbow-to-knees. Not a hip flexor exercise." }
+            ]},
+            mon: { name: "Rest", rest: true, restMsg: "Full rest day. Prioritise sleep, hydration, and nutrition." },
+            tue: { name: "Rest", rest: true, restMsg: "Full rest day. Light walking is fine — no training." },
+            wed: { name: "Rest", rest: true, restMsg: "Full rest day. Foam roll and stretch if you like." }
+        },
+        order: ["thu","fri","sat","sun","mon","tue","wed"]
+    },
+    "7day": {
+        label: "7-Day Split",
+        days: {
+            mon: { name: "Push", rest: false, exercises: [
+                { name: "Incline barbell press", sets: 4, reps: "6–8", rest: "2.5 min", rpe: 8, cue: "30° incline. Pause 1s at chest. Full ROM. Upper chest activation." },
+                { name: "Flat DB press", sets: 3, reps: "10–12", rest: "90s", rpe: 8, cue: "Full stretch at bottom. Squeeze at top. Don't flare elbows." },
+                { name: "Cable lateral raise (unilateral)", sets: 4, reps: "15–20", rest: "60s", rpe: 9, cue: "KEY EXERCISE. Lead with elbow not wrist. Slow 3s eccentric. Cable at ankle height." },
+                { name: "Machine shoulder press", sets: 3, reps: "10–12", rest: "90s", rpe: 8, cue: "Don't lock out at top. Full controlled range." },
+                { name: "Tricep rope pushdown", sets: 3, reps: "12–15", rest: "60s", rpe: 8, cue: "Elbows pinned. Spread rope at bottom. Feel long head stretch." },
+                { name: "Overhead DB tricep extension", sets: 3, reps: "10–12", rest: "75s", rpe: 8, cue: "Slow eccentric. Elbows don't flare. Max long head stretch." },
+                { name: "Cable chest fly (cross-body)", sets: 3, reps: "15", rest: "60s", rpe: 7, cue: "High-to-low. Squeeze at centre. Skip if low energy." }
+            ]},
+            tue: { name: "Pull", rest: false, exercises: [
+                { name: "Pull-up or lat pulldown", sets: 4, reps: "6–10", rest: "2.5 min", rpe: 9, cue: "Wide grip. Initiate with lats. Pull elbows to pockets." },
+                { name: "Seated cable row (wide grip)", sets: 4, reps: "10–12", rest: "90s", rpe: 8, cue: "Full stretch forward, hard squeeze at contraction. Row to lower sternum." },
+                { name: "Face pull (rope, high cable)", sets: 4, reps: "15–20", rest: "60s", rpe: 8, cue: "Pull to forehead. Externally rotate at end. Hold 2s." },
+                { name: "DB rear delt fly (bent over)", sets: 3, reps: "15", rest: "60s", rpe: 8, cue: "Chest on incline bench. Lead with elbows. Don't shrug. 3s eccentric." },
+                { name: "EZ bar curl (standing)", sets: 4, reps: "8–10", rest: "90s", rpe: 8, cue: "No swinging. Full extension. Supinate at top. Slow 3s down." },
+                { name: "Incline DB curl", sets: 3, reps: "10–12", rest: "75s", rpe: 9, cue: "Elbows behind body. Long head stretch. This builds the peak." },
+                { name: "Hammer curl (cross-body)", sets: 3, reps: "12", rest: "60s", rpe: 8, cue: "Alternating, controlled. Builds brachialis width." }
+            ]},
+            wed: { name: "Rest", rest: true, restMsg: "Full rest day. Prioritise sleep, hydration and nutrition. Light walking is fine — no training." },
+            thu: { name: "Shoulders + Arms", rest: false, exercises: [
+                { name: "DB lateral raise — heavy", sets: 5, reps: "12–15", rest: "75s", rpe: 9, cue: "Week 3–4: drop set on final set — drop 40%, grind 10 more reps." },
+                { name: "Cable lateral raise (unilateral)", sets: 4, reps: "15–20", rest: "60s", rpe: 10, cue: "Different angle from DB. Same elbow-lead cue. 3s eccentric." },
+                { name: "Arnold press", sets: 3, reps: "10–12", rest: "90s", rpe: 8, cue: "Hits all 3 delt heads. Rotate slowly. Don't go ego-heavy." },
+                { name: "Close-grip bench press", sets: 4, reps: "8–10", rest: "2 min", rpe: 8, cue: "Shoulder-width grip. Lock out hard at top. 3s eccentric." },
+                { name: "EZ bar skull crusher", sets: 3, reps: "10–12", rest: "75s", rpe: 8, cue: "Lower to forehead. Elbows stay vertical. Full extension." },
+                { name: "Concentration curl", sets: 3, reps: "12–15", rest: "60s", rpe: 9, cue: "Full supination. Peak squeeze 2s. Slow down. Zero momentum." },
+                { name: "Cable curl (supinated)", sets: 3, reps: "12–15", rest: "60s", rpe: 10, cue: "Partials on final set — squeeze bottom half for 10 more after failure." }
+            ]},
+            fri: { name: "Rest", rest: true, restMsg: "Full rest day. Foam roll, stretch, or go for a walk. Let Thursday's work absorb." },
+            sat: { name: "Legs", rest: false, exercises: [
+                { name: "Barbell back squat", sets: 4, reps: "6–8", rest: "2.5 min", rpe: 8, cue: "Break parallel. Brace core hard. Drive knees out. Do NOT skip." },
+                { name: "Romanian deadlift (RDL)", sets: 4, reps: "10–12", rest: "2 min", rpe: 8, cue: "Hip hinge, soft knees, bar on legs. Hamstring stretch is the goal." },
+                { name: "Leg press", sets: 3, reps: "12–15", rest: "90s", rpe: 8, cue: "High wide foot placement = glute/ham emphasis. Full ROM. No quarter reps." },
+                { name: "Leg curl (lying or seated)", sets: 3, reps: "12–15", rest: "75s", rpe: 9, cue: "Full stretch. Squeeze hard at peak contraction. 2s hold." },
+                { name: "Standing calf raise", sets: 4, reps: "15–20", rest: "60s", rpe: 9, cue: "Full ROM — heel all the way down, all the way up. Slow and controlled." },
+                { name: "Seated calf raise", sets: 3, reps: "15–20", rest: "60s", rpe: 8, cue: "Targets a different head of the calf. Don't rush. Feel the stretch at the bottom." }
+            ]},
+            sun: { name: "Core + Cardio", rest: false, exercises: [
+                { name: "Hanging leg raise", sets: 4, reps: "12–15", rest: "60s", rpe: 8, cue: "Posterior pelvic tilt at top. Don't swing. If too hard, do captain's chair knee raises." },
+                { name: "Cable crunch (kneeling)", sets: 4, reps: "15–20", rest: "60s", rpe: 8, cue: "Round your spine deliberately. Think elbow-to-knees. This is NOT a hip flexor exercise." },
+                { name: "Plank (weighted if possible)", sets: 3, reps: "45–60s", rest: "60s", rpe: 8, cue: "Full body tension. Squeeze glutes and abs simultaneously. Don't let hips sag." },
+                { name: "Ab wheel rollout", sets: 3, reps: "10–12", rest: "75s", rpe: 9, cue: "Brace before you roll. Don't let lower back arch. Pause at full extension." },
+                { name: "Incline sit-up", sets: 3, reps: "15–20", rest: "60s", rpe: 8, cue: "Full ROM. Don't pull neck. Slow and controlled on the way down." },
+                { name: "Steady-state cardio", sets: 1, reps: "20 min", rest: "—", rpe: 6, cue: "Treadmill, bike, or walk outside. Keep heart rate at 130–140 bpm. Burns fat and aids recovery." }
+            ]}
+        },
+        order: ["mon","tue","wed","thu","fri","sat","sun"]
+    }
+};
 
-        // --- STATE MANAGEMENT ---
-        let db = JSON.parse(localStorage.getItem('gym_pwa_data') || '{}');
-        if (!db.settings) db.settings = { activeSplit: "4-Day Uni Split" };
-        function saveDB() { localStorage.setItem('gym_pwa_data', JSON.stringify(db)); }
+const DAY_LABELS = { mon:"Mon", tue:"Tue", wed:"Wed", thu:"Thu", fri:"Fri", sat:"Sat", sun:"Sun" };
 
-        // --- APP LOGIC ---
-        function showView(viewId) {
-            document.getElementById('dash-view').style.display = viewId === 'dash' ? 'block' : 'none';
-            document.getElementById('settings-view').style.display = viewId === 'settings' ? 'block' : 'none';
-            if (viewId === 'dash') renderDayTabs();
+let db = JSON.parse(localStorage.getItem('gym_v2') || '{}');
+if (!db.split) db.split = "7day";
+if (!db.chk) db.chk = {};
+if (!db.sets) db.sets = {};
+if (!db.done) db.done = {};
+if (!db.vol) db.vol = 0;
+let curDay = null;
+let openCards = {};
+
+function save() { localStorage.setItem('gym_v2', JSON.stringify(db)); }
+
+function showView(v) {
+    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+    document.getElementById('view-' + v).classList.add('active');
+    if (v === 'dash') renderAll();
+    if (v === 'progress') renderProgress();
+}
+
+function switchRoutine() {
+    db.split = document.getElementById('routine-select').value;
+    curDay = null;
+    save();
+    showView('dash');
+}
+
+function getAutoDay() {
+    const map = ['sun','mon','tue','wed','thu','fri','sat'];
+    const today = map[new Date().getDay()];
+    const split = SPLITS[db.split];
+    if (split.days[today]) return today;
+    return split.order[0];
+}
+
+function renderTabs() {
+    const split = SPLITS[db.split];
+    const container = document.getElementById('day-tabs');
+    container.innerHTML = '';
+    split.order.forEach(dk => {
+        const d = split.days[dk];
+        const tab = document.createElement('div');
+        let cls = 'tab';
+        if (dk === curDay) cls += ' active';
+        else if (d.rest) cls += ' rest-tab';
+        else if (db.done[db.split + ':' + dk]) cls += ' done-tab';
+        tab.className = cls;
+        tab.textContent = DAY_LABELS[dk] + ' — ' + d.name;
+        if (!d.rest || dk === curDay) tab.onclick = () => { curDay = dk; renderAll(); };
+        container.appendChild(tab);
+    });
+}
+
+function renderWorkout() {
+    const split = SPLITS[db.split];
+    const day = split.days[curDay];
+    const container = document.getElementById('workout-content');
+    container.innerHTML = '';
+
+    if (day.rest) {
+        container.innerHTML = `<div class="rest-card">
+            <i class="ti ti-moon" aria-hidden="true"></i>
+            <h2>${day.name} day</h2>
+            <p>${day.restMsg}</p>
+        </div>`;
+        document.getElementById('exercise-count').textContent = 'Rest day';
+        document.getElementById('progress-percent').textContent = '';
+        document.getElementById('prog-fill').style.width = '0%';
+        document.getElementById('complete-btn').disabled = true;
+        return;
+    }
+
+    day.exercises.forEach((ex, i) => {
+        const key = db.split + ':' + curDay + ':' + i;
+        const isDone = !!db.chk[key];
+        const isOpen = !!openCards[key];
+        const sets = db.sets[key] || [{ w: '', r: '' }];
+        const rpeClass = 'rpe' + Math.min(ex.rpe, 10);
+
+        const card = document.createElement('div');
+        card.className = 'exercise-card' + (isDone ? ' done' : '') + (isOpen ? ' open' : '');
+
+        const hdr = document.createElement('div');
+        hdr.className = 'ex-header';
+        hdr.innerHTML = `
+            <div class="check-circle${isDone ? ' done' : ''}" id="chk-${i}">
+                <i class="ti ti-check" aria-hidden="true"></i>
+            </div>
+            <div class="ex-info">
+                <h3>${ex.name}</h3>
+                <div class="ex-meta">
+                    <span>${ex.sets} sets &bull; ${ex.reps} reps &bull; rest ${ex.rest}</span>
+                    <span class="rpe-tag ${rpeClass}">RPE ${ex.rpe}</span>
+                </div>
+            </div>
+            <i class="ti ti-chevron-down chevron" aria-hidden="true"></i>
+        `;
+        hdr.querySelector('.check-circle').onclick = (e) => { e.stopPropagation(); toggleDone(key, i, ex); };
+        hdr.onclick = () => { openCards[key] = !openCards[key]; renderWorkout(); };
+
+        let setRows = '';
+        sets.forEach((s, si) => {
+            setRows += `<div class="set-row">
+                <span class="set-label">Set ${si + 1}</span>
+                <input type="number" class="input-field" placeholder="kg" value="${s.w}" inputmode="decimal" onchange="updSet('${key}',${si},'w',this.value)">
+                <input type="number" class="input-field" placeholder="reps" value="${s.r}" inputmode="numeric" onchange="updSet('${key}',${si},'r',this.value)">
+            </div>`;
+        });
+
+        const body = document.createElement('div');
+        body.className = 'ex-body';
+        body.innerHTML = `
+            <div class="cue-box"><strong>Coach:</strong> ${ex.cue}</div>
+            <div class="set-header">
+                <span></span><span>Weight</span><span>Reps</span>
+            </div>
+            <div id="sets-${i}">${setRows}</div>
+            <button class="btn-add-set" onclick="addSet('${key}',${i})"><i class="ti ti-plus" aria-hidden="true"></i> Add set</button>
+        `;
+
+        card.appendChild(hdr);
+        card.appendChild(body);
+        container.appendChild(card);
+    });
+
+    updateProg();
+}
+
+function toggleDone(key, i, ex) {
+    const was = db.chk[key];
+    db.chk[key] = !was;
+    if (!was) {
+        (db.sets[key] || []).forEach(s => {
+            db.vol = Math.round((db.vol || 0) + (parseFloat(s.w) || 0) * (parseFloat(s.r) || 0));
+        });
+    }
+    save(); renderWorkout();
+}
+
+function updSet(key, si, field, val) {
+    if (!db.sets[key]) db.sets[key] = [{ w: '', r: '' }];
+    db.sets[key][si][field] = val;
+    save();
+}
+
+function addSet(key, i) {
+    if (!db.sets[key]) db.sets[key] = [{ w: '', r: '' }];
+    db.sets[key].push({ w: '', r: '' });
+    save(); renderWorkout();
+}
+
+function updateProg() {
+    const day = SPLITS[db.split].days[curDay];
+    if (!day || day.rest) return;
+    const total = day.exercises.length;
+    const done = day.exercises.filter((_, i) => db.chk[db.split + ':' + curDay + ':' + i]).length;
+    const pct = total ? Math.round(done / total * 100) : 0;
+    document.getElementById('exercise-count').textContent = done + ' / ' + total + ' exercises';
+    document.getElementById('progress-percent').textContent = pct + '%';
+    document.getElementById('prog-fill').style.width = pct + '%';
+    document.getElementById('complete-btn').disabled = done < total;
+}
+
+function completeWorkout() {
+    db.done[db.split + ':' + curDay] = true;
+    save(); renderAll(); showView('progress');
+}
+
+function renderProgress() {
+    const split = SPLITS[db.split];
+    const sr = document.getElementById('streak-row');
+    sr.innerHTML = '';
+    let cnt = 0;
+    split.order.forEach(dk => {
+        const d = split.days[dk];
+        const el = document.createElement('div');
+        const isDone = !!db.done[db.split + ':' + dk];
+        if (d.rest) {
+            el.className = 'sdot restday';
+            el.textContent = 'Rest';
+        } else {
+            el.className = 'sdot' + (isDone ? ' done' : '');
+            el.textContent = DAY_LABELS[dk].slice(0, 2);
+            if (isDone) cnt++;
         }
+        sr.appendChild(el);
+    });
+    const lbl = document.createElement('span');
+    lbl.style.cssText = 'font-size:13px;color:var(--text-dim);margin-left:4px';
+    const trainDays = split.order.filter(dk => !split.days[dk].rest).length;
+    lbl.textContent = cnt + '/' + trainDays + ' done';
+    sr.appendChild(lbl);
 
-        function switchRoutine() {
-            db.settings.activeSplit = document.getElementById('routine-select').value;
-            saveDB();
-            const d = new Date();
-            const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-            loadWorkout(days[d.getDay()]);
-            showView('dash');
+    const wg = document.getElementById('wk-grid');
+    wg.innerHTML = '';
+    split.order.forEach(dk => {
+        const d = split.days[dk];
+        const isDone = !!db.done[db.split + ':' + dk];
+        const div = document.createElement('div');
+        div.className = 'wk-c' + (isDone ? ' done' : '') + (d.rest ? ' restday' : '');
+        if (d.rest) {
+            div.innerHTML = `<div class="wk-dl">${DAY_LABELS[dk]}</div><div class="wk-nm">${d.name}</div><div class="wk-st"><i class="ti ti-moon" style="font-size:12px" aria-hidden="true"></i> Rest</div>`;
+        } else {
+            const total = d.exercises.length;
+            const chkd = d.exercises.filter((_, i) => db.chk[db.split + ':' + dk + ':' + i]).length;
+            div.innerHTML = `<div class="wk-dl">${DAY_LABELS[dk]}</div><div class="wk-nm">${d.name}</div>
+                <div class="wk-st">${isDone ? '<i class="ti ti-circle-check" style="font-size:12px;color:#4caf50" aria-hidden="true"></i> Complete' : chkd + '/' + total + ' exercises'}</div>`;
         }
+        wg.appendChild(div);
+    });
 
-        function renderDayTabs() {
-            const tabsContainer = document.getElementById('day-tabs');
-            tabsContainer.innerHTML = '';
-            const activeSplit = db.settings.activeSplit;
-            const routine = SPLITS[activeSplit];
-            const daysOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-            
-            daysOrder.forEach(day => {
-                const tab = document.createElement('div');
-                tab.className = 'tab';
-                tab.id = `tab-${day}`;
-                const label = routine[day].name || "REST";
-                tab.innerText = `${day.charAt(0).toUpperCase() + day.slice(1)}: ${label}`;
-                tab.onclick = () => loadWorkout(day);
-                tabsContainer.appendChild(tab);
-            });
-        }
+    document.getElementById('vol-n').textContent = (db.vol || 0).toLocaleString() + ' kg';
+}
 
-        function loadWorkout(dayKey) {
-            const activeSplit = db.settings.activeSplit;
-            const routine = SPLITS[activeSplit];
-            const dayData = routine[dayKey];
+function resetAll() {
+    if (confirm('Reset all progress? This cannot be undone.')) {
+        db = { split: db.split, chk: {}, sets: {}, done: {}, vol: 0 };
+        openCards = {};
+        save(); renderAll();
+    }
+}
 
-            // Update Tabs UI
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            const activeTab = document.getElementById(`tab-${dayKey}`);
-            if (activeTab) activeTab.classList.add('active');
+function renderAll() {
+    if (!curDay) curDay = getAutoDay();
+    document.getElementById('routine-select').value = db.split;
+    renderTabs();
+    renderWorkout();
+}
 
-            const container = document.getElementById('workout-content');
-            container.innerHTML = '';
-            
-            if (!dayData.exercises || dayData.exercises.length === 0) {
-                container.innerHTML = `
-                    <div style="background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin: 12px; padding: 40px 20px; text-align: center;">
-                        <h2 style="font-size: 18px; margin-bottom: 8px;">${dayData.name}</h2>
-                        <p style="color: var(--text-dim); font-size: 14px;">Focus on recovery and quality nutrition.</p>
-                    </div>
-                `;
-                document.getElementById('exercise-count').innerText = "0 / 0 exercises";
-                document.getElementById('progress-percent').innerText = "0%";
-                return;
-            }
-
-            document.getElementById('exercise-count').innerText = `0 / ${dayData.exercises.length} exercises`;
-
-            dayData.exercises.forEach((ex, idx) => {
-                const card = document.createElement('div');
-                card.className = 'exercise-card';
-                card.innerHTML = `
-                    <div class="ex-header">
-                        <div class="check-circle" id="check-${idx}" onclick="toggleDone(${idx})"></div>
-                        <div class="ex-info">
-                            <h3>${ex.name}</h3>
-                            <div class="ex-meta">
-                                <span>${ex.sets} sets • ${ex.reps} reps • ${ex.rest}s rest</span>
-                                <span class="rpe-tag">RPE ${ex.rpe}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="cue-box"><b>COACH:</b> ${ex.cue}</div>
-                    <div id="sets-container-${idx}">
-                        <div class="set-row">
-                            <span class="set-label">Set 1</span>
-                            <input type="number" class="input-field" placeholder="kg">
-                            <input type="number" class="input-field" placeholder="reps">
-                        </div>
-                    </div>
-                    <button class="btn-add-set" onclick="addSet(${idx})">+ Add set</button>
-                `;
-                container.appendChild(card);
-            });
-            updateProgress();
-        }
-
-        function addSet(exIdx) {
-            const container = document.getElementById(`sets-container-${exIdx}`);
-            const setNum = container.children.length + 1;
-            const div = document.createElement('div');
-            div.className = 'set-row';
-            div.innerHTML = `
-                <span class="set-label">Set ${setNum}</span>
-                <input type="number" class="input-field" placeholder="kg">
-                <input type="number" class="input-field" placeholder="reps">
-            `;
-            container.appendChild(div);
-        }
-
-        function toggleDone(idx) {
-            const el = document.getElementById(`check-${idx}`);
-            el.classList.toggle('done');
-            updateProgress();
-        }
-
-        function updateProgress() {
-            const cards = document.querySelectorAll('.exercise-card');
-            if (cards.length === 0) return;
-            const done = document.querySelectorAll('.check-circle.done').length;
-            const total = cards.length;
-            const percent = Math.round((done / total) * 100);
-            document.getElementById('exercise-count').innerText = `${done} / ${total} exercises`;
-            document.getElementById('progress-percent').innerText = `${percent}%`;
-        }
-
-        function completeWorkout() {
-            alert("Great session! Progress logged to local storage.");
-        }
-
-        // Initialize App
-        window.onload = () => {
-            const d = new Date();
-            const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-            const currentDay = days[d.getDay()];
-            
-            document.getElementById('display-date').innerText = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-            document.getElementById('routine-select').value = db.settings.activeSplit;
-
-            renderDayTabs();
-            loadWorkout(currentDay);
-        };
-    </script>
+document.getElementById('display-date').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+renderAll();
+</script>
 </body>
 </html>
